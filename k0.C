@@ -22,7 +22,7 @@ using VBracket = o2::math_utils::Bracket<int>;
 void k0(std::string secFile = "o2_secondary_vertex.root")
 {
 
-  auto fMCTracks = TFile::Open("sgn_Kine.root");
+  auto fMCTracks = TFile::Open("o2sim_Kine.root");
   auto fSecondaries = TFile::Open(secFile.data());
   auto fITS = TFile::Open("o2trac_its.root");
 
@@ -59,7 +59,10 @@ void k0(std::string secFile = "o2_secondary_vertex.root")
   }
 
   auto outFile = TFile("Secondaries.root", "recreate");
-  TH1D *histInvMass = new TH1D("k0 mass", "rec k0s mass", 40, 0., 5);
+  TH1D *histInvMass = new TH1D("k0 mass", "rec k0s mass", 80, 0.3, 1.);
+  TH1D *histCosPA = new TH1D("k0 Pointing angle", "rec k0s Pointing angle", 80, 0.8, 1.);
+  TH1D *histDCA = new TH1D("k0 DCA", "rec k0s DCA", 80, 0., 3.);
+  TH1D *histR2 = new TH1D("k0 R^2", "rec k0s R^2", 80, 0., 10.);
 
   treeSecondaries->GetEntry();
   treeITS->GetEntry();
@@ -68,6 +71,7 @@ void k0(std::string secFile = "o2_secondary_vertex.root")
   {
     std::cout << "---------------------------------" << std::endl;
     std::cout << "V0 P: " << v0.getP() << std::endl;
+    std::vector<int> motherID;
     for (int iV0 = 0; iV0 < 2; iV0++)
     {
 
@@ -84,13 +88,23 @@ void k0(std::string secFile = "o2_secondary_vertex.root")
           std::cout << "Track PDG: " << mcTracksMatrix[evID][trackID].GetPdgCode() << std::endl;
           std::cout << "Generated MC P: " << mcTracksMatrix[evID][trackID].GetP() << std::endl;
           std::cout << "Track Reco P: " << v0.getProng(iV0).getP() << std::endl;
-          std::cout << TMath::Sqrt(v0.calcMass2(0.139570**2, 0.139570**2)) << std::endl;
-          histInvMass->Fill(TMath::Sqrt(v0.calcMass2(0.139570**2, 0.139570**2)));
+          std::cout << TMath::Sqrt(v0.calcMass2(0.139570 * 0.139570, 0.139570 * 0.139570)) << std::endl;
+          motherID.push_back(mcTracksMatrix[evID][trackID].getMotherTrackId());
         }
       }
+    }
+    if (motherID[0] == motherID[1])
+    {
+      histInvMass->Fill(TMath::Sqrt(v0.calcMass2(0.139570 * 0.139570, 0.139570 * 0.139570)));
+      histR2->Fill(v0.calcR2());
+      histCosPA->Fill(v0.getCosPA());
+      histDCA->Fill(v0.getDCA());
     }
   }
   outFile.cd();
   histInvMass->Write();
+  histR2->Write();
+  histCosPA->Write();
+  histDCA->Write();
   outFile.Close();
 }
